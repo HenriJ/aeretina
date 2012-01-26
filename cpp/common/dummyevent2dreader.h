@@ -1,3 +1,10 @@
+/* DummyEvent2dReader
+*
+* Maintainer : Henri Jouhaud <henri.jouhaud@polytechnique.org>
+*
+* A convenient way to generate random events
+*/
+
 #ifndef DUMMYEVENT2DREADER_H
 #define DUMMYEVENT2DREADER_H
 
@@ -12,9 +19,9 @@ public:
     virtual bool hasNext();
 
 private:
-    int iter;
-    int limit;
     int spatialSize;
+    int limit;
+    int iter;
 };
 
 #endif // DUMMYEVENT2DREADER_H

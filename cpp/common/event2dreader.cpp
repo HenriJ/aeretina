@@ -6,8 +6,14 @@ Event2dReader::Event2dReader()
 {
 }
 
-Event2d Event2dReader::bufferToEvent2d(char * buffer)
+Event2dReader::~Event2dReader()
 {
+}
+
+Event2d Event2dReader::bufferToEvent2d(char * buffer) const
+{
+    // Thank you for the code Joao & Charles
+
     int i = 0;
 
     unsigned int part_1 = 0x000000FF&buffer[i];
@@ -18,8 +24,8 @@ Event2d Event2dReader::bufferToEvent2d(char * buffer)
     unsigned int blob = (part_4)|(part_3<<8)|(part_2<<16)|(part_1<<24);
 
     int x = (blob & 0x000000fE)>>1;
-    int y   = (blob & 0x00007f00)>>8;
-    int p = (((blob & 0x00000001)>>0)==0)?-1:1;	//+1 ON, -1 OFF
+    int y = (blob & 0x00007f00)>>8;
+    int p = (((blob & 0x00000001)>>0)==0) ? -1 : 1;	//+1 ON, -1 OFF
 
     unsigned int part_5 = 0x000000FF&buffer[i+4];
     unsigned int part_6 = 0x000000FF&buffer[i+5];

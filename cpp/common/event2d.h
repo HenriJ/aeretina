@@ -1,3 +1,10 @@
+/* Event2d
+*
+* Maintainer : Henri Jouhaud <henri.jouhaud@polytechnique.org>
+*
+* Event2d represents a tuple (x, y, p, t)
+*/
+
 #ifndef EVENT2D_H
 #define EVENT2D_H
 

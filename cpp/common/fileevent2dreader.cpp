@@ -1,6 +1,6 @@
 #include "fileevent2dreader.h"
 
-FileEvent2dReader::FileEvent2dReader(char * path)
+FileEvent2dReader::FileEvent2dReader(const char * path)
 {
     file.open(path);
     while (file.peek() == '#') {
