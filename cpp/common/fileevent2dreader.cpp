@@ -6,6 +6,13 @@ FileEvent2dReader::FileEvent2dReader(const char * path)
     while (file.peek() == '#') {
         while(file.get() != '\n') {}
     }
+
+//    while (hasNext()) {
+//        Event2d e = readEvent2d();
+//        if (e.t < 10000) {
+//            break;
+//        }
+//    }
 }
 
 bool FileEvent2dReader::hasNext()

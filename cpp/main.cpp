@@ -51,7 +51,7 @@ struct TimedModif2dSet {
         : t(t), modifs(modifs) {}
 };
 
-TimedModif2dSet spatialTrans(const Event2d e, Mat * m, int maxWidth) {
+TimedModif2dSet spatialTrans(const Event2d & e, Mat * m, int maxWidth) {
     vector<Modif2d> modifs;
 
     int shift = m->cols / 2;
@@ -96,7 +96,7 @@ int main(int argc, char *argv[])
     Mat dG = A - B;
     //cout << dG << endl;
 
-    //DummyEvent2dReader reader(128, 10000000);
+    //DummyEvent2dReader reader(128, 1000000);
     FileEvent2dReader reader("/home/riton/demo.aer");
 
     const unsigned int WIDTH = 128;
@@ -107,34 +107,43 @@ int main(int argc, char *argv[])
 
     int maxT = 100000;
 
-    boost::interprocess::message_queue::remove("modifs");
-
-    boost::interprocess::message_queue queue(boost::interprocess::create_only, "modifs", 100, sizeof(Modif2d));
-
+// TODO: threads
+//    boost::interprocess::message_queue::remove("modifs");
+//    boost::interprocess::message_queue queue(boost::interprocess::create_only, "modifs", 100, sizeof(Modif2d));
 //    boost::thread_group tg;
 //    modifMerger(bpONe);
 //    tg.create_thread();
 
+    unsigned int last_t;
+
     while (reader.hasNext()) {
         ++total;
 
+// DEBUG: max number of BPEvents in a BPCell
 //        if (total % 1000 == 0) {
 //            int maxEvents = 0;
+//            BPCell * c;
 //            for (int x = 0; x < WIDTH; ++x) {
 //                for (int y = 0; y < WIDTH; ++y) {
 //                    if (bpONe.c(x, y).size() > maxEvents) {
-//                        maxEvents = bpONe.c(x, y).size();
+//                        c = & bpONe.c(x, y);
+//                        maxEvents = c->size();
 //                    }
 //                }
 //            }
 //            cout << maxEvents << endl;
+//            cout << c->size() << endl;
+//            cout << c->compute(last_t) << endl;
 //        }
 
-        TimedModif2dSet set = spatialTrans(reader.readEvent2d(), &dG, WIDTH);
+        Event2d e = reader.readEvent2d();
+        TimedModif2dSet set = spatialTrans(e, &dG, WIDTH);
+        last_t = set.t;
         unsigned int oldTime = std::max((int) (set.t) - maxT, 0);
 
 
         for (unsigned int i = 0; i < set.modifs.size(); ++i) {
+            // TODO: threads
             //queue.send(&set.modifs[i], sizeof(set.modifs[i]), 0);
 
             Modif2d & m = set.modifs[i];
@@ -143,6 +152,12 @@ int main(int argc, char *argv[])
             cell.clean(oldTime);
             cell.add(BPEvent(m.v, set.t));
         }
+
+        for (unsigned int p = 0; p < 100; ++p) {
+            std::vector<double> pot = bpONe.c(30, 60).rangeCompute(last_t, last_t+200000, 1000);
+
+        }
+
     }
 
 

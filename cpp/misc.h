@@ -3,8 +3,9 @@
 
 #include <opencv2/core/core.hpp>
 
-unsigned char rand_char(unsigned char max);
-
 cv::Mat kernel_gaussian(unsigned int half_size, double sigmA);
+
+double cachedExp(unsigned int t, double tau);
+double cachedPropExp(unsigned int t, double tau);
 
 #endif // MISC_H
