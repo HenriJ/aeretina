@@ -16,6 +16,7 @@ public:
 
 private:
     unsigned int maxSize;
+    unsigned int size_;
     unsigned int a;
     unsigned int b;
     BPEvent * events;

@@ -96,7 +96,8 @@ int main(int argc, char *argv[])
     Mat dG = A - B;
     //cout << dG << endl;
 
-    DummyEvent2dReader reader;
+    //DummyEvent2dReader reader(128, 10000000);
+    FileEvent2dReader reader("/home/riton/demo.aer");
 
     const unsigned int WIDTH = 128;
     BPLayer bpONe(WIDTH);
@@ -115,20 +116,19 @@ int main(int argc, char *argv[])
 //    tg.create_thread();
 
     while (reader.hasNext()) {
-
         ++total;
-        if (total % 1000 == 0) {
-            int maxEvents = 0;
-            for (int x = 0; x < WIDTH; ++x) {
-                for (int y = 0; y < WIDTH; ++y) {
-                    if (bpONe.c(x, y).size() > maxEvents) {
-                        maxEvents = bpONe.c(x, y).size();
-                    }
-                }
-            }
-            cout << maxEvents << endl;
-        }
 
+//        if (total % 1000 == 0) {
+//            int maxEvents = 0;
+//            for (int x = 0; x < WIDTH; ++x) {
+//                for (int y = 0; y < WIDTH; ++y) {
+//                    if (bpONe.c(x, y).size() > maxEvents) {
+//                        maxEvents = bpONe.c(x, y).size();
+//                    }
+//                }
+//            }
+//            cout << maxEvents << endl;
+//        }
 
         TimedModif2dSet set = spatialTrans(reader.readEvent2d(), &dG, WIDTH);
         unsigned int oldTime = std::max((int) (set.t) - maxT, 0);

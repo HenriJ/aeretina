@@ -1,11 +1,15 @@
 #include "bpcell.h"
 
+#include <cmath>
+#include <iostream>
+
 BPCell::BPCell()
 {
-    maxSize = 200;
-    events = new BPEvent[200];
+    maxSize = 5000;
+    size_ = 0;
+    events = new BPEvent[maxSize];
     a = 0;
-    b = 1;
+    b = 0;
 }
 
 BPCell::~BPCell()
@@ -15,27 +19,31 @@ BPCell::~BPCell()
 
 void BPCell::add(BPEvent e)
 {
-    events[a] = e;
-    ++a;
-    if (a >= maxSize) {
-        a = 0;
+    events[b] = e;
+    ++b;
+    if (b >= maxSize) {
+        b = 0;
+    }
+    ++size_;
+    if (size_ > maxSize) {
+        std::cout << size_ << "\n";
+        std::cout << "BPCell overflow\n";
     }
 }
 
 void BPCell::clean(unsigned int oldT)
 {
-//    std::vector<BPEvent>::iterator it = events->begin();
-//    for (; it < events->end(); ++it) {
-//        if ((*it).t > oldT) {
-//            break;
-//        }
-//    }
-//    if (it != events->begin()) {
-//        events->erase(events->begin(), it);
-//    }
+    int k = 0;
+    while (events[k].t <= oldT && a != b) {
+        ++a;
+        if (a >= maxSize) {
+            a = 0;
+        }
+        --size_;
+    }
 }
 
 unsigned int BPCell::size() const
 {
-    return b-a;
+    return size_;
 }
