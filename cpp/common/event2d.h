@@ -9,6 +9,7 @@
 #define EVENT2D_H
 
 #include <iostream>
+#include "timestamp.h"
 
 class Event2d
 {
@@ -16,10 +17,10 @@ public:
     unsigned char x;
     unsigned char y;
     char p;
-    unsigned int t;
+    timestamp t;
 
     Event2d(unsigned char x, unsigned char y,
-             char p, unsigned int t);
+             char p, timestamp t);
 };
 
 std::ostream& operator<<(std::ostream& output, const Event2d& mat);

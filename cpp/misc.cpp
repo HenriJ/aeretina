@@ -32,30 +32,3 @@ Mat kernel_gaussian(unsigned int half_size, double sigmA) {
 
     return K;
 }
-
-double cachedExp(unsigned int t, double tau) {
-    static vector<double> cache(100000);
-
-    if (cache[t] == 0) {
-        cache[t] = exp(-t / tau);
-        if (t >= 100000) {
-            std::cout << "cachedExp overflow" << "\n";
-        }
-    }
-
-    return cache[t];
-}
-
-double cachedPropExp(unsigned int t, double tau) {
-    static vector<double> cache(100000);
-
-    if (cache[t] == 0) {
-        double temp = t / tau;
-        cache[t] = temp * exp(-temp);
-        if (t >= 100000) {
-            std::cout << "cachedPropExp overflow" << "\n";
-        }
-    }
-
-    return cache[t];
-}

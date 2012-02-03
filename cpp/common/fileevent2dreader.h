@@ -13,14 +13,20 @@
 class FileEvent2dReader : public Event2dReader
 {
 public:
-    // path to the aer file
-    FileEvent2dReader(const char * path);
+    /*
+     * @path to the aer file
+     * @discard number of events to discard at the begining of the file
+     */
+    FileEvent2dReader(const char * path, unsigned int discard = 0);
 
+    Event2d rawEvent2d();
     virtual Event2d readEvent2d();
     virtual bool hasNext();
 
 private:
     std::ifstream file;
+    timestamp shift_t;
+    timestamp last_t;
 };
 
 #endif // FILEEVENT2DREADER_H

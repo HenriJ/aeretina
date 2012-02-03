@@ -5,7 +5,7 @@ BPEvent::BPEvent()
 {
 }
 
-BPEvent::BPEvent(double v, unsigned int t)
+BPEvent::BPEvent(double v, timestamp t)
     : v(v), t(t)
 {
 }

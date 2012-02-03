@@ -4,6 +4,8 @@ QT       -= gui
 
 LIBS     += -lopencv_core -L/usr/X11R6/lib -lGL -lglut -lGLEW -lboost_thread
 
+QMAKE_CXXFLAGS = -std=c++0x -O3
+
 TARGET   =  aeretina
 CONFIG   += console
 CONFIG   -= app_bundle
@@ -19,7 +21,9 @@ SOURCES += main.cpp \
     common/dummyevent2dreader.cpp \
     bplayer.cpp \
     bpevent.cpp \
-    bpcell.cpp
+    bpcell.cpp \
+    precomp/precompexp.cpp \
+    precomp/precomppropexp.cpp
 
 HEADERS += \
     misc.h \
@@ -29,7 +33,11 @@ HEADERS += \
     common/dummyevent2dreader.h \
     bplayer.h \
     bpevent.h \
-    bpcell.h
+    bpcell.h \
+    common/timestamp.h \
+    precomp/precompexp.h \
+    precomp/precomppropexp.h \
+    common/Queue.h
 
 OTHER_FILES += \
     junk.txt

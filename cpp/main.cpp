@@ -3,36 +3,26 @@
 #include <vector>
 #include <cmath>
 #include <cstdlib>
+#include <thread>
 
-#include <boost/thread.hpp>
-#include <boost/interprocess/ipc/message_queue.hpp>
 #include <boost/timer.hpp>
+#include <boost/thread/condition_variable.hpp>
 
 #include <opencv2/core/core.hpp>
 
-#include <GL/glew.h>
-#ifdef __APPLE__
-#  include <GLUT/glut.h>
-#else
-#  include <GL/glut.h>
-#endif
-
-#include "misc.h"
 #include "common/event2d.h"
 #include "common/fileevent2dreader.h"
 #include "common/dummyevent2dreader.h"
+
+#include "precomp/precompexp.h"
+#include "precomp/precomppropexp.h"
+
+#include "misc.h"
 #include "bpevent.h"
 #include "bplayer.h"
 
 using namespace std;
 using namespace cv;
-
-static void render(void)
-{
-    glClearColor(1.0f, 1.0f, 1.0f, 1.0f);
-    glClear(GL_COLOR_BUFFER_BIT);
-    glutSwapBuffers();
-}
 
 struct Modif2d {
     unsigned char x;
@@ -70,61 +60,55 @@ TimedModif2dSet spatialTrans(const Event2d & e, Mat * m, int maxWidth) {
     return TimedModif2dSet(e.t, modifs);
 }
 
-//void modifMerger(vector<BPEvent>[128]* bp) {
-//    cout << "plop" << bp[0][0].size() << endl;
-//}
-
 int main(int argc, char *argv[])
 {
-    glutInit(&argc, argv);
-    glutInitDisplayMode(GLUT_RGB | GLUT_DOUBLE);
-    glutInitWindowSize(300, 300);
-    glutCreateWindow("BP");
-    glutDisplayFunc(&render);
-    //glutIdleFunc(&update_fade_factor);
-
-    glewInit();
-    if (!GLEW_VERSION_2_0) {
-        fprintf(stderr, "OpenGL 2.0 not available\n");
-        return 1;
-    }
-
-    //boost::thread glutThread( glutMainLoop );
-
     Mat A = kernel_gaussian(2, 1);
     Mat B = kernel_gaussian(2, 0.99);
-    Mat dG = A - B;
-    //cout << dG << endl;
+    Mat dGON = A - B;
+    Mat dGOFF = -dGON;
+    //cout << dGON << endl;
 
-    //DummyEvent2dReader reader(128, 1000000);
-    FileEvent2dReader reader("/home/riton/demo.aer");
+
+    DummyEvent2dReader reader(128, 1000000);
+    //FileEvent2dReader reader("/home/riton/NC1.dat");
 
     const unsigned int WIDTH = 128;
-    BPLayer bpONe(WIDTH);
+    BPLayer bpONe (WIDTH);
+    BPLayer bpONi (WIDTH);
+    BPLayer bpOFFe(WIDTH);
+    BPLayer bpOFFi(WIDTH);
 
     boost::timer tic;
     unsigned total = 0;
 
     int maxT = 100000;
+    int timeShift = 5000;
 
-// TODO: threads
-//    boost::interprocess::message_queue::remove("modifs");
-//    boost::interprocess::message_queue queue(boost::interprocess::create_only, "modifs", 100, sizeof(Modif2d));
-//    boost::thread_group tg;
-//    modifMerger(bpONe);
-//    tg.create_thread();
+    unsigned int last_t = 0;
+    unsigned int last_t_shift = 0;
+    unsigned int oldTime = 0;
+    unsigned int oldTimeShift = 0;
 
-    unsigned int last_t;
+    PrecompExp * pExp = new PrecompExp(100000, 20000);
+    PrecompPropExp * pPropExp = new PrecompPropExp(100000, 20000);
+
+
+    boost::condition_variable cond;
+
+    thread t1([] {
+
+        cout << ".";
+    });
 
     while (reader.hasNext()) {
         ++total;
 
 // DEBUG: max number of BPEvents in a BPCell
 //        if (total % 1000 == 0) {
-//            int maxEvents = 0;
+//            unsigned int maxEvents = 0;
 //            BPCell * c;
-//            for (int x = 0; x < WIDTH; ++x) {
-//                for (int y = 0; y < WIDTH; ++y) {
+//            for (unsigned int x = 0; x < WIDTH; ++x) {
+//                for (unsigned int y = 0; y < WIDTH; ++y) {
 //                    if (bpONe.c(x, y).size() > maxEvents) {
 //                        c = & bpONe.c(x, y);
 //                        maxEvents = c->size();
@@ -132,43 +116,58 @@ int main(int argc, char *argv[])
 //                }
 //            }
 //            cout << maxEvents << endl;
-//            cout << c->size() << endl;
-//            cout << c->compute(last_t) << endl;
 //        }
 
         Event2d e = reader.readEvent2d();
-        TimedModif2dSet set = spatialTrans(e, &dG, WIDTH);
-        last_t = set.t;
-        unsigned int oldTime = std::max((int) (set.t) - maxT, 0);
 
-
-        for (unsigned int i = 0; i < set.modifs.size(); ++i) {
-            // TODO: threads
-            //queue.send(&set.modifs[i], sizeof(set.modifs[i]), 0);
-
-            Modif2d & m = set.modifs[i];
-            BPCell & cell = bpONe.c(m.x, m.y);
-
-            cell.clean(oldTime);
-            cell.add(BPEvent(m.v, set.t));
+        if (e.t != last_t) {
+            last_t = e.t;
+            last_t_shift = last_t - timeShift;
+            oldTime = std::max((int) (last_t) - maxT, 0);
+            oldTimeShift = oldTime - timeShift;
         }
 
-        for (unsigned int p = 0; p < 100; ++p) {
-            std::vector<double> pot = bpONe.c(30, 60).rangeCompute(last_t, last_t+200000, 1000);
+        TimedModif2dSet setON  = spatialTrans(e, &dGON, WIDTH);
+        TimedModif2dSet setOFF = spatialTrans(e, &dGOFF, WIDTH);
 
-        }
+//        for (unsigned int i = 0; i < setON.modifs.size(); ++i) {
+//            Modif2d & m = setON.modifs[i];
+//            BPCell & cell = bpONe.c(m.x, m.y);
+//            cell.clean(oldTime);
+//            cell.add(BPEvent(m.v, last_t));
+//        }
+
+//        for (unsigned int i = 0; i < setON.modifs.size(); ++i) {
+//            Modif2d & m = setON.modifs[i];
+//            BPCell & cell = bpONi.c(m.x, m.y);
+//            cell.clean(oldTimeShift);
+//            cell.add(BPEvent(m.v, last_t_shift));
+//        }
+
+//        for (unsigned int i = 0; i < setOFF.modifs.size(); ++i) {
+//            Modif2d & m = setOFF.modifs[i];
+//            BPCell & cell = bpOFFe.c(m.x, m.y);
+//            cell.clean(oldTime);
+//            cell.add(BPEvent(m.v, last_t));
+//        }
+
+//        for (unsigned int i = 0; i < setOFF.modifs.size(); ++i) {
+//            Modif2d & m = setOFF.modifs[i];
+//            BPCell & cell = bpOFFi.c(m.x, m.y);
+//            cell.clean(oldTimeShift);
+//            cell.add(BPEvent(m.v, last_t_shift));
+//        }
+
+//        std::vector<double> valsONe  = bpONe.c(e.x, e.y).rangeCompute(last_t, last_t+100000, 1000, pExp, pPropExp);
+//        std::vector<double> valsONi  = bpONi.c(e.x, e.y).rangeCompute(last_t, last_t+100000, 1000, pExp, pPropExp);
+//        std::vector<double> valsOFFe = bpOFFe.c(e.x, e.y).rangeCompute(last_t, last_t+100000, 1000, pExp, pPropExp);
+//        std::vector<double> valsOFFi = bpOFFi.c(e.x, e.y).rangeCompute(last_t, last_t+100000, 1000, pExp, pPropExp);
 
     }
 
+    cout << (double)(total) / tic.elapsed() << "e/s" << endl;
 
-    cout << total << " in " << tic.elapsed() << endl;
-
-
-    cout << sizeof(BPEvent) << endl;
     sleep(100);
-
-
-    //glutThread.join();
 
     return 0;
 }

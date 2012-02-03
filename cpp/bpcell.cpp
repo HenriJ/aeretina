@@ -1,16 +1,19 @@
 #include "bpcell.h"
 
-#include <cmath>
 #include <iostream>
 #include "misc.h"
 
 BPCell::BPCell()
 {
-    maxSize = 5000;
     size_ = 0;
-    events = new BPEvent[maxSize];
     a = 0;
     b = 0;
+}
+
+void BPCell::init(unsigned int maxSize)
+{
+    this->maxSize = maxSize;
+    events = new BPEvent[maxSize];
 }
 
 BPCell::~BPCell()
@@ -32,7 +35,7 @@ void BPCell::add(const BPEvent e)
     }
 }
 
-void BPCell::clean(unsigned int oldT)
+void BPCell::clean(timestamp oldT)
 {
     while (events[a].t <= oldT && a!= b) {
         ++a;
@@ -48,7 +51,7 @@ unsigned int BPCell::size() const
     return size_;
 }
 
-double BPCell::compExp(double t)
+double BPCell::compExp(double t, PrecompExp * pExp)
 {
     double sum = 0;
 
@@ -57,13 +60,13 @@ double BPCell::compExp(double t)
             i = 0;
         }
         BPEvent & e = events[i];
-        sum += e.v * cachedExp(t - e.t, 20000);
+        sum += e.v * pExp->val(t - e.t);
     }
 
     return sum;
 }
 
-double BPCell::compute(double t)
+double BPCell::compute(double t, PrecompPropExp * pPropExp)
 {
     double sum = 0;
 
@@ -72,13 +75,14 @@ double BPCell::compute(double t)
             i = 0;
         }
         BPEvent & e = events[i];
-        sum += e.v * cachedPropExp(t - e.t, 20000);
+        sum += e.v * pPropExp->val(t - e.t);
     }
 
     return sum;
 }
 
-std::vector<double> BPCell::rangeCompute(unsigned int start_t, unsigned int end_t, unsigned int delta_t)
+std::vector<double> BPCell::rangeCompute(timestamp start_t, timestamp end_t, timestamp delta_t,
+                                         PrecompExp * pExp, PrecompPropExp * pPropExp)
 {
     unsigned int iters = (end_t - start_t) / delta_t;
     std::vector<double> vals(iters);
@@ -86,14 +90,14 @@ std::vector<double> BPCell::rangeCompute(unsigned int start_t, unsigned int end_
     double delta = double(delta_t)/20000;
     double K = exp(-delta);
 
-    double B = compute(start_t);
-    double A = compExp(start_t);
+    double B = compute(start_t, pPropExp);
+    double A = compExp(start_t, pExp);
 
     vals[0] = B;
 
     for (unsigned int k = 1; k < iters; ++k) {
         B = K * (B + delta * A);
-        vals[k] = B;
+        vals[k] = std::max(B, 0.);
         A *= K;
     }
 

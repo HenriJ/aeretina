@@ -1,7 +1,7 @@
 #include "event2d.h"
 
 Event2d::Event2d(unsigned char x, unsigned char y,
-                   char p, unsigned int t)
+                   char p, timestamp t)
                   : x(x), y(y), p(p), t(t)
 {
 }

@@ -105,3 +105,61 @@ void bp_feed(vector<bpEvent> bp, camEvent e, bpParams* params) {
 }
 
 
+
+
+
+
+
+
+
+
+
+
+#include <GL/glew.h>
+#ifdef __APPLE__
+#  include <GLUT/glut.h>
+#else
+#  include <GL/glut.h>
+#endif
+
+static void render(void)
+{
+    glClearColor(1.0f, 1.0f, 1.0f, 1.0f);
+    glClear(GL_COLOR_BUFFER_BIT);
+    glutSwapBuffers();
+}
+
+#include <boost/thread.hpp>
+#include <boost/interprocess/ipc/message_queue.hpp>
+
+
+    glutInit(&argc, argv);
+    glutInitDisplayMode(GLUT_RGB | GLUT_DOUBLE);
+    glutInitWindowSize(300, 300);
+    glutCreateWindow("BP");
+    glutDisplayFunc(&render);
+    //glutIdleFunc(&update_fade_factor);
+
+    glewInit();
+    if (!GLEW_VERSION_2_0) {
+        fprintf(stderr, "OpenGL 2.0 not available\n");
+        return 1;
+    }
+
+    //boost::thread glutThread( glutMainLoop );
+
+
+// TODO: threads
+//    boost::interprocess::message_queue::remove("modifs");
+//    boost::interprocess::message_queue queue(boost::interprocess::create_only, "modifs", 100, sizeof(Modif2d));
+//    boost::thread_group tg;
+//    modifMerger(bpONe);
+//    tg.create_thread();
+
+
+
+            // TODO: threads
+            //queue.send(&set.modifs[i], sizeof(set.modifs[i]), 0);
+
+
+
