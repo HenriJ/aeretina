@@ -1,6 +1,7 @@
+#include "misc.h"
+
 #include <cstdlib>
 #include <vector>
-#include "misc.h"
 #include <iostream>
 
 using namespace cv;

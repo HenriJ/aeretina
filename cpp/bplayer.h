@@ -3,7 +3,6 @@
 
 #include <vector>
 
-#include "bpevent.h"
 #include "bpcell.h"
 
 class BPLayer
@@ -12,7 +11,9 @@ public:
     BPLayer(unsigned int width);
     virtual ~BPLayer();
 
-    inline BPCell & c(unsigned int x, unsigned int y) { return bp[y * width + x]; }
+    inline unsigned int side() const { return width; }
+
+    inline BPCell & c(unsigned int x, unsigned int y) const { return bp[y * width + x]; }
 
 private:
     unsigned int width;

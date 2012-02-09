@@ -1,6 +1,4 @@
 
-const unsigned char WIDTH = 128;
-
 DoubleMat gaussian_gen(unsigned int size, double sigmA) {
     DoubleMat mat(2*size + 1);
 
@@ -51,32 +49,6 @@ DoubleMat gaussiandiff_gen(unsigned int size, double sigmA, double sigmB, double
     mat.normalize();
     return mat;
 }
-
-struct camEvent {
-    unsigned char x;
-    unsigned char y;
-    char p;
-    unsigned int t;
-
-    camEvent(unsigned char x, unsigned char y,
-             char p, unsigned int t)
-        : x(x), y(y), p(p), t(t) {}
-};
-
-struct bpEvent {
-    double v;
-    unsigned int t;
-
-    bpEvent(double v, unsigned int t)
-        : v(v), t(t) {}
-};
-
-struct bpParams {
-    unsigned int timeWindow;
-    double* spatialTransform;
-};
-
-
 
 
 // def diff_gauss_kern(size = 2, sigmA = 0.9, sigmB = 1., ratio = 1.):

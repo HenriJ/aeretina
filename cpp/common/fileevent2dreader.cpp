@@ -1,8 +1,15 @@
 #include "fileevent2dreader.h"
 
+using namespace std;
+
 FileEvent2dReader::FileEvent2dReader(const char * path, unsigned int discard)
 {
     file.open(path);
+
+    if (!file.is_open()) {
+        cout << "Unable to open " << path << endl;
+        terminate();
+    }
 
     // Discard file commentaries
     while (file.peek() == '#') {

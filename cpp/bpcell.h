@@ -3,34 +3,25 @@
 
 #include <vector>
 
-#include "precomp/precompexp.h"
-#include "precomp/precomppropexp.h"
-
-#include "bpevent.h"
+#include "precompexp.h"
 
 class BPCell
 {
 public:
     BPCell();
-    void init(unsigned int maxSize = 2500);
     virtual ~BPCell();
 
-    void add(const BPEvent e);
-    void clean(timestamp oldT);
+    void add(const double v, const timestamp t, const PrecompExp * pExp);
 
-    unsigned int size() const;
+    /* DEBUG */
+    inline timestamp get_last_t() const { return last_t; }
 
-    double compExp(double t, PrecompExp * pExp);
-    double compute(double t, PrecompPropExp * pPropExp);
-    std::vector<double> rangeCompute(timestamp start_t, timestamp end_t, timestamp delta_t,
-                                     PrecompExp * pExp, PrecompPropExp * pPropExp);
+    double compute(const timestamp t, const PrecompExp *pExp) const;
 
 private:
-    unsigned int maxSize;
-    unsigned int size_;
-    unsigned int a;
-    unsigned int b;
-    BPEvent * events;
+    double u;
+    double v;
+    timestamp last_t;
 };
 
 #endif // BPCELL_H

@@ -2,15 +2,18 @@
 #define PRECOMPEXP_H
 
 #include <iostream>
+#include <assert.h>
+
+#include "common/timestamp.h"
 
 class PrecompExp
 {
 public:
-    PrecompExp(int max, double tau);
+    PrecompExp(double tau);
     ~PrecompExp();
-    inline double val(int t) const {
-        if (t > max) {
-            std::cout << "PrecompExp overflow, asking for " << t << " > " << max << "\n";
+    inline double val(timestamp t) const {
+        assert(t >= 0);
+        if (t >= size) {
             return 0;
         }
         return precomp[t];
@@ -18,7 +21,7 @@ public:
 
 private:
     double * precomp;
-    int max;
+    timestamp size;
 };
 
 #endif // PRECOMPEXP_H
