@@ -3,6 +3,7 @@ import scipy as sp
 import matplotlib.pyplot as pp
 import aer_helper as ah
 import time
+from aer import *
 
 """
 	* Bipolar model
@@ -15,29 +16,14 @@ import time
 	that is passed to bipolar_event()
 """
 
-class Event2d:
-	""" A 2d aer event """
-	x = 0
-	y = 0
-	p = 0
-	t = 0
-
-
-	def __init__(self, x, y, p, t):
-		 self.x = x
-		 self.y = y
-		 self.p = p
-		 self.t = t
-
-
-
 class BPCell:
 	""" A bipolar cell """
-	u = 0
-	v = 0 # The actual potential
-	last_t = 0 # Time of the last event
-	tau = 20000 # 
 
+	def __init__(self):
+		self.u = 0
+		self.v = 0
+		self.last_t = 0
+		self.tau = 20000
 
 	def addEvent(self, e_v, e_t):
 		assert(e_t >= self.last_t)
@@ -70,11 +56,9 @@ class BPCell:
 
 class BPLayer:
 	""" A bipolar layer """
-	cells = []
-	ST = None
-
 
 	def __init__(self, width, ST):
+		self.cells = []
 		self.ST = ST
 		for i in range(width):
 			line_of_cells = []
@@ -117,28 +101,35 @@ def diff_gauss_kern(size = 2, sigmA = 0.9, sigmB = 1., ratio = 1.):
 	return g / abs(g.sum())
 
 
-# Load datas
-addrs, ts = ah.loadaerdat('ntest3.dat', 10000)
-aer = []
-for i in range(len(addrs)):
-	x, y, p = ah.extractRetinaEventsFromAddr_one(addrs[i])
-	aer.append(Event2d(x, y, p, ts[i] - ts[0]))
+
+reader = FileEvent2dReader('ntest3.dat')
 
 
 # Size of the BP layers
 retina_size = 128
 
 # Init of the layers
-STone  = diff_gauss_kern(5, 0.2, 1, 1)
-BPone  = BPLayer(retina_size, STone)
+STone   = diff_gauss_kern(5, 0.9, 1, 1)
+SToffe  = diff_gauss_kern(5, 1, 0.9, 1)
+
+bpONe   = BPLayer(retina_size, STone)
+bpOFFe  = BPLayer(retina_size, SToffe)
 
 i = 0
 
-for e in aer:
-	BPone.addEvent(e)
+while reader.hasNext():
 	i += 1
-	if i % 10 == 0:
-		print(str(i) + " " + str(e.t))
-		BPone.show(e.t, 1)
+
+	e = reader.readEvent2d()
+	print(e.toString())
+
+	bpONe.addEvent(e)
+	bpOFFe.addEvent(e)
+
+
+	if i % 1000 == 0:
+		bpONe.show(e.t, 1)
+		bpOFFe.show(e.t, 2)
 		pp.show(block=False)
-	#raw_input("Press Enter to continue...")
+
+	#raw_input("...")

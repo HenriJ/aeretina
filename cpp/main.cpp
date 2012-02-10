@@ -19,8 +19,7 @@
 #  include <GL/glut.h>
 #endif
 
-#define CL ENABLE EXCEPTIONS
-#include <CL/cl.hpp>
+
 
 #include "common/event2d.h"
 #include "common/fileevent2dreader.h"
@@ -31,7 +30,7 @@
 #include "misc.h"
 #include "bplayer.h"
 
-#define ENABLE_DISPLAY 1
+#define ENABLE_DISPLAY 10
 
 using namespace std;
 using namespace cv;
@@ -84,14 +83,15 @@ struct SimuParam {
 
     int timeShift;
 
-    PrecompExp * pExp;
+    PrecompExp * pExpON;
+    PrecompExp * pExpOFF;
 };
 
 void buildParams(SimuParam & p) {
     p.width = 128;
 
-    Mat A = kernel_gaussian(5, 2);
-    Mat B = kernel_gaussian(5, 2*0.99);
+    Mat A = kernel_gaussian(15, 2);
+    Mat B = kernel_gaussian(15, 5);
     Mat dGON = A - B;
     Mat dGOFF = -dGON;
     p.dGON = dGON;
@@ -99,7 +99,8 @@ void buildParams(SimuParam & p) {
 
     p.timeShift = 5000;
 
-    p.pExp = new PrecompExp(20000);
+    p.pExpON  = new PrecompExp(20000);
+    p.pExpOFF = new PrecompExp(40000);
 }
 
 static SimuParam * sParam;
@@ -109,7 +110,7 @@ static timestamp last_t;
 static float * displayBufferR;
 static float * displayBufferG;
 static float * displayBufferB;
-static float maxCols = 13;
+static float maxCols = 1000;
 
 static int checker_size = 1;
 
@@ -153,8 +154,6 @@ int main(int argc, char *argv[])
     /*
      * OpenCL
      */
-    cl::Context context(CL_DEVICE_TYPE_GPU);
-
 
     /*
      * Simulation parameters
@@ -168,8 +167,8 @@ int main(int argc, char *argv[])
      * Input data
      */
     //DummyEvent2dReader reader(p.width, 1000000);
-    //FileEvent2dReader reader("/home/riton/NC1.dat");
-    FileEvent2dReader reader("/home/riton/ntest3.dat");
+    FileEvent2dReader reader("/home/riton/NC1.dat");
+    //FileEvent2dReader reader("/home/riton/ntest3.dat");
     //FileEvent2dReader reader("/home/riton/iv/saccades_variables_bluredleft/p2_d64.dat"); //8.4E6 e
     //FileEvent2dReader reader("/home/riton/sacgratings.dat"); // 12.7E6 e
 
@@ -233,10 +232,10 @@ int main(int argc, char *argv[])
             float val;
             for (unsigned int x = 0; x < p.width; ++x) {
                 for (unsigned int y = 0; y < p.width; ++y) {
-                    val = bpONe.c(x, y).compute(last_t, sParam->pExp);
+                    val = bpONe.c(x, y).compute(last_t, sParam->pExpON);
                     displayBufferR[k] = val;
 
-                    val = bpOFFe.c(x, y).compute(last_t, sParam->pExp);
+                    val = bpOFFe.c(x, y).compute(last_t, sParam->pExpOFF);
                     displayBufferG[k] = val;
 
                     ++k;
@@ -251,7 +250,7 @@ int main(int argc, char *argv[])
         for (unsigned int i = 0; i < setON.modifs.size(); ++i) {
             Modif2d & m = setON.modifs[i];
             BPCell & cell = bpONe.c(m.x, m.y);
-            cell.add(m.v, last_t, p.pExp);
+            cell.add(m.v, last_t, p.pExpON);
         }
 
 //        for (unsigned int i = 0; i < setON.modifs.size(); ++i) {
@@ -263,7 +262,7 @@ int main(int argc, char *argv[])
         for (unsigned int i = 0; i < setOFF.modifs.size(); ++i) {
             Modif2d & m = setOFF.modifs[i];
             BPCell & cell = bpOFFe.c(m.x, m.y);
-            cell.add(m.v, last_t, p.pExp);
+            cell.add(m.v, last_t, p.pExpOFF);
         }
 
 //        for (unsigned int i = 0; i < setOFF.modifs.size(); ++i) {

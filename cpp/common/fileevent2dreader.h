@@ -2,7 +2,7 @@
 *
 * Maintainer : Henri Jouhaud <henri.jouhaud@polytechnique.org>
 *
-* This class allow you to sequentially read the events from an aer dump file
+* This class allows you to sequentially read the events from an aer dump file
 */
 
 #ifndef FILEEVENT2DREADER_H

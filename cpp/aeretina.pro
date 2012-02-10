@@ -2,7 +2,7 @@ QT       += core
 
 QT       -= gui
 
-LIBS     += -lopencv_core -L/usr/X11R6/lib -lGL -lglut -lGLEW -lboost_thread -lopencl
+LIBS     += -lopencv_core -L/usr/X11R6/lib -lGL -lglut -lGLEW -lboost_thread
 
 QMAKE_CXXFLAGS = -std=c++0x -O0
 
