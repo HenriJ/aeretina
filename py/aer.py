@@ -1,3 +1,10 @@
+# aer.py
+# -------------
+# Author : Henri Jouhaud <henri.jouhaud@polytechnique.org>
+#
+# This library contains basic classes to use aer files and events
+# in a pythonic way
+
 import os
 
 class Event2d:
@@ -25,6 +32,7 @@ class Event2dReader:
 
 
 	def bufferToEvent2d(self, buf):
+		# Thank you for the code Joao & Charles
 		i = 0
 
 		part_1 = 0x000000FF&ord(buf[i])
@@ -53,7 +61,8 @@ class Event2dReader:
 
 
 class FileEvent2dReader(Event2dReader):
-	"""This class allows you to sequentially read the events from an aer dump file"""
+	"""This class allows you to sequentially read the events from an aer dump file.
+	The timestamps are reindexed in order to begin at 0 and grow continuously"""
 
 	def __init__(self, path):
 		self.f = open(path, 'r')

@@ -1,7 +1,6 @@
 import numpy as np
 import scipy as sp
 import matplotlib.pyplot as pp
-import aer_helper as ah
 import time
 from aer import *
 

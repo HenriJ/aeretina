@@ -19,6 +19,9 @@
 #  include <GL/glut.h>
 #endif
 
+#define __CL_ENABLE_EXCEPTIONS
+#include <CL/cl.hpp>
+
 
 
 #include "common/event2d.h"
@@ -30,7 +33,7 @@
 #include "misc.h"
 #include "bplayer.h"
 
-#define ENABLE_DISPLAY 10
+#define ENABLE_DISPLAY 0
 
 using namespace std;
 using namespace cv;
@@ -78,13 +81,17 @@ TimedModif2dSet spatialTrans(const Event2d & e, Mat * m, int maxWidth) {
 struct SimuParam {
     unsigned int width;
 
-    Mat dGON;
-    Mat dGOFF;
+    Mat dGONe;
+    Mat dGONi;
+    Mat dGOFFe;
+    Mat dGOFFi;
 
     int timeShift;
 
-    PrecompExp * pExpON;
-    PrecompExp * pExpOFF;
+    PrecompExp * pExpONe;
+    PrecompExp * pExpONi;
+    PrecompExp * pExpOFFe;
+    PrecompExp * pExpOFFi;
 };
 
 void buildParams(SimuParam & p) {
@@ -94,13 +101,17 @@ void buildParams(SimuParam & p) {
     Mat B = kernel_gaussian(15, 5);
     Mat dGON = A - B;
     Mat dGOFF = -dGON;
-    p.dGON = dGON;
-    p.dGOFF = dGOFF;
+    p.dGONe  = dGON;
+    p.dGONi  = dGON;
+    p.dGOFFe = dGOFF;
+    p.dGOFFi = dGOFF;
 
-    p.timeShift = 5000;
+    p.timeShift = 50000;
 
-    p.pExpON  = new PrecompExp(20000);
-    p.pExpOFF = new PrecompExp(40000);
+    p.pExpONe  = new PrecompExp(20000);
+    p.pExpONi  = new PrecompExp(20000);
+    p.pExpOFFe = new PrecompExp(20000);
+    p.pExpOFFi = new PrecompExp(20000);
 }
 
 static SimuParam * sParam;
@@ -154,6 +165,7 @@ int main(int argc, char *argv[])
     /*
      * OpenCL
      */
+
 
     /*
      * Simulation parameters
@@ -232,11 +244,14 @@ int main(int argc, char *argv[])
             float val;
             for (unsigned int x = 0; x < p.width; ++x) {
                 for (unsigned int y = 0; y < p.width; ++y) {
-                    val = bpONe.c(x, y).compute(last_t, sParam->pExpON);
+                    val = bpONe.c(x, y).compute(last_t, sParam->pExpONe);
                     displayBufferR[k] = val;
 
-                    val = bpOFFe.c(x, y).compute(last_t, sParam->pExpOFF);
+                    val = bpOFFe.c(x, y).compute(last_t, sParam->pExpOFFe);
                     displayBufferG[k] = val;
+
+                    val = bpONi.c(x, y).compute(last_t, sParam->pExpONi);
+                    displayBufferB[k] = val;
 
                     ++k;
                 }
@@ -244,40 +259,48 @@ int main(int argc, char *argv[])
         }
         #endif
 
-        TimedModif2dSet setON  = spatialTrans(e, &p.dGON, p.width);
-        TimedModif2dSet setOFF = spatialTrans(e, &p.dGOFF, p.width);
+        TimedModif2dSet setONe  = spatialTrans(e, &p.dGONe,  p.width);
+        TimedModif2dSet setONi  = spatialTrans(e, &p.dGONi,  p.width);
+        TimedModif2dSet setOFFe = spatialTrans(e, &p.dGOFFe, p.width);
+        TimedModif2dSet setOFFi = spatialTrans(e, &p.dGOFFi, p.width);
 
-        for (unsigned int i = 0; i < setON.modifs.size(); ++i) {
-            Modif2d & m = setON.modifs[i];
+        for (unsigned int i = 0; i < setONe.modifs.size(); ++i) {
+            Modif2d & m = setONe.modifs[i];
             BPCell & cell = bpONe.c(m.x, m.y);
-            cell.add(m.v, last_t, p.pExpON);
+            cell.add(m.v, last_t, p.pExpONe);
         }
 
-//        for (unsigned int i = 0; i < setON.modifs.size(); ++i) {
-//            Modif2d & m = setON.modifs[i];
-//            BPCell & cell = bpONi.c(m.x, m.y);
-//            cell.add(m.v, last_t_shift, p.pExp);
-//        }
+        for (unsigned int i = 0; i < setONi.modifs.size(); ++i) {
+            Modif2d & m = setONi.modifs[i];
+            BPCell & cell = bpONi.c(m.x, m.y);
+            cell.add(m.v, last_t_shift, p.pExpONi);
+        }
 
-        for (unsigned int i = 0; i < setOFF.modifs.size(); ++i) {
-            Modif2d & m = setOFF.modifs[i];
+        for (unsigned int i = 0; i < setOFFe.modifs.size(); ++i) {
+            Modif2d & m = setOFFe.modifs[i];
             BPCell & cell = bpOFFe.c(m.x, m.y);
-            cell.add(m.v, last_t, p.pExpOFF);
+            cell.add(m.v, last_t, p.pExpOFFe);
         }
 
-//        for (unsigned int i = 0; i < setOFF.modifs.size(); ++i) {
-//            Modif2d & m = setOFF.modifs[i];
-//            BPCell & cell = bpOFFi.c(m.x, m.y);
-//            cell.add(m.v, last_t_shift, p.pExp);
+        for (unsigned int i = 0; i < setOFFi.modifs.size(); ++i) {
+            Modif2d & m = setOFFi.modifs[i];
+            BPCell & cell = bpOFFi.c(m.x, m.y);
+            cell.add(m.v, last_t_shift, p.pExpOFFi);
+        }
+
+//        int ix = 42;
+//        int iy = 42;
+//        vector<double> valsONe   = bpONe.c(ix, iy).rangeCompute(last_t, 100, last_t+200000, p.pExpONe);
+//        vector<double> valsONi   = bpONe.c(ix, iy).rangeCompute(last_t, 100, last_t+200000, p.pExpONi);
+//        vector<double> valsOFFe  = bpONe.c(ix, iy).rangeCompute(last_t, 100, last_t+200000, p.pExpOFFe);
+//        vector<double> valsOFFi  = bpONe.c(ix, iy).rangeCompute(last_t, 100, last_t+200000, p.pExpOFFi);
+
+//        double last_val = 0;
+//        for (unsigned int i = 0; i < valsONe.size(); ++i) {
+
 //        }
-
-//        std::vector<double> valsONe  = bpONe.c(e.x, e.y).rangeCompute(last_t, last_t+100000, 1000, pExp, pPropExp);
-//        std::vector<double> valsONi  = bpONi.c(e.x, e.y).rangeCompute(last_t, last_t+100000, 1000, pExp, pPropExp);
-//        std::vector<double> valsOFFe = bpOFFe.c(e.x, e.y).rangeCompute(last_t, last_t+100000, 1000, pExp, pPropExp);
-//        std::vector<double> valsOFFi = bpOFFi.c(e.x, e.y).rangeCompute(last_t, last_t+100000, 1000, pExp, pPropExp);
-
     }
-
+    cout << sizeof(double) << endl;
     cout << event_index / tic.elapsed() << "e/s" << endl;
 
     #if ENABLE_DISPLAY

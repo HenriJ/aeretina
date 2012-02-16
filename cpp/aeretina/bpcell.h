@@ -17,6 +17,7 @@ public:
     inline timestamp get_last_t() const { return last_t; }
 
     double compute(const timestamp t, const PrecompExp *pExp) const;
+    std::vector<double> rangeCompute(const timestamp begin_t, const timestamp delta_t, const timestamp end_t, const PrecompExp *pExp) const;
 
 private:
     double u;

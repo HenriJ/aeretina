@@ -1,2 +1,4 @@
 *.o
-qt/qt
+build/
+*.pyc
+*.dat

@@ -1,0 +1,3 @@
+aer/ contains the common classes to the different programs using aer files
+interpiker/ contains a programm used to build histogram of interspikes
+aeretina/ aims to simulates a part of the retina using events from a dvs camera
