@@ -2,9 +2,9 @@ QT       -= gui core
 
 LIBS     += -lopencv_core
 
-QMAKE_CXXFLAGS = -std=c++0x -O0
+QMAKE_CXXFLAGS = -std=c++0x -O3
 
-TARGET   =  rgcell
+TARGET   =  build/rgcell
 CONFIG   += console
 CONFIG   -= app_bundle
 
@@ -12,26 +12,24 @@ TEMPLATE = app
 
 
 SOURCES += main.cpp \
-    misc.cpp \
-    ../aer/event2d.cpp \
+    ini/ini.c \
+    ini/cpp/INIReader.cpp \
     ../aer/event2dreader.cpp \
     ../aer/fileevent2dreader.cpp \
     ../aer/dummyevent2dreader.cpp \
-    bplayer.cpp \
-    bpcell.cpp \
     precompexp.cpp \
-    rgcell.cpp
+    doublemat.cpp \
+    bplayer.cpp
 
 HEADERS += \
-    misc.h \
+    ini/ini.h \
+    ini/cpp/INIReader.h \
     ../aer/event2d.h \
     ../aer/event2dreader.h \
     ../aer/fileevent2dreader.h \
     ../aer/dummyevent2dreader.h \
-    bplayer.h \
-    bpcell.h \
     ../aer/timestamp.h \
     precompexp.h \
-    ../aer/Queue.h \
-    rgcell.h
+    doublemat.h \
+    bplayer.h
 

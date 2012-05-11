@@ -1,14 +1,30 @@
 #include "bplayer.h"
 
-using namespace std;
+#include <iostream>
 
-BPLayer::BPLayer(unsigned int width)
-    : width(width)
+BPLayer::BPLayer(int width, int rgx, int rgy, timestamp tau, DoubleMat bipolar, DoubleMat ganglion)
+    : width(width), pixels(width*width), rgx(rgx), rgy(rgy),
+      bipolar(bipolar), ganglion(ganglion)
 {
-    bp = new BPCell[width*width];
+    if (tau == 0) {
+        enabled = false;
+    } else {
+        invtausquare = 1./(tau*tau);
+        pExp = new PrecompExp(tau);
+
+        u = new double[pixels];
+        v = new double[pixels];
+        last_t = 0;
+
+        enabled = true;
+    }
 }
 
 BPLayer::~BPLayer()
 {
-    delete[] bp;
+    if (enabled) {
+        delete[] u;
+        delete[] v;
+        delete pExp;
+    }
 }

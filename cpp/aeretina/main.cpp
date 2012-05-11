@@ -23,10 +23,9 @@
 #include <CL/cl.hpp>
 
 
-
-#include "common/event2d.h"
-#include "common/fileevent2dreader.h"
-#include "common/dummyevent2dreader.h"
+#include "../aer/event2d.h"
+#include "../aer/fileevent2dreader.h"
+#include "../aer/dummyevent2dreader.h"
 
 #include "precompexp.h"
 

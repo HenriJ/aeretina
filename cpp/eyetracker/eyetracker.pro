@@ -11,12 +11,12 @@ CONFIG   -= app_bundle
 TEMPLATE = app
 
 SOURCES += main.cpp \
-    ../aer/event2d.cpp \
     ../aer/event2dreader.cpp \
     ../aer/fileevent2dreader.cpp \
     ../aer/dummyevent2dreader.cpp \
-    circle.cpp \
-    precompexp.cpp
+    ../aer/precompexp.cpp \
+    ../aer/eventdisplay.cpp
+
 
 HEADERS += \
     ../aer/event2d.h \
@@ -24,7 +24,10 @@ HEADERS += \
     ../aer/fileevent2dreader.h \
     ../aer/dummyevent2dreader.h \
     ../aer/timestamp.h \
-    circle.h \
-    precompexp.h
+    ../aer/precompexp.h \
+    pupil.h \
+    range.h \
+    ../aer/eventdisplay.h
+
 
 OTHER_FILES +=

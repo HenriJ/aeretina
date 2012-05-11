@@ -22,11 +22,13 @@ public:
     virtual Event2d readEvent2d() = 0;
 
     // Blocking, returns true if there is a next event
-    virtual bool hasNext() = 0;
+    virtual bool hasNext(bool sync = false) = 0;
 
 protected:
     // Helper function to convert an 8 bytes buffer to an event object
     Event2d bufferToEvent2d(char * buffer) const;
+    Event2d atisToEvent2d(char * buffer) const;
+
 };
 
 #endif // EVENT2DREADER_H

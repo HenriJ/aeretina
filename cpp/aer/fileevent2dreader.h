@@ -17,14 +17,17 @@ public:
      * @path to the aer file
      * @discard number of events to discard at the begining of the file
      */
-    FileEvent2dReader(const char * path, unsigned int discard = 0);
+    FileEvent2dReader(const char * path, unsigned int discard = 0, int format = 0);
 
     Event2d rawEvent2d();
     virtual Event2d readEvent2d();
-    virtual bool hasNext();
+    virtual bool hasNext(bool sync = false);
+
+    Event2d peekEvent2d();
 
 private:
     std::ifstream file;
+    int format;
     timestamp shift_t;
     timestamp last_t;
 };

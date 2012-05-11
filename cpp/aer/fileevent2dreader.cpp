@@ -2,7 +2,8 @@
 
 using namespace std;
 
-FileEvent2dReader::FileEvent2dReader(const char * path, unsigned int discard)
+FileEvent2dReader::FileEvent2dReader(const char * path, unsigned int discard, int format)
+    : format(format)
 {
     file.open(path);
 
@@ -30,10 +31,23 @@ FileEvent2dReader::FileEvent2dReader(const char * path, unsigned int discard)
     last_t = e.t;
 }
 
-bool FileEvent2dReader::hasNext()
+bool FileEvent2dReader::hasNext(bool sync)
 {
     file.peek();
-    return !file.eof();
+
+    if (file.eof()) {
+        return false;
+    }
+
+    if (sync) {
+        Event2d e = peekEvent2d();
+        timestamp delta = e.t-last_t;
+        if (delta > 0) {
+            usleep(e.t-last_t);
+        }
+    }
+
+    return true;
 }
 
 Event2d FileEvent2dReader::rawEvent2d()
@@ -41,7 +55,10 @@ Event2d FileEvent2dReader::rawEvent2d()
     char * buffer = new char[8];
     file.read(buffer, 8);
 
-    return bufferToEvent2d(buffer);
+    if (format == 0)
+        return bufferToEvent2d(buffer);
+    else
+        return atisToEvent2d(buffer);
 }
 
 Event2d FileEvent2dReader::readEvent2d()
@@ -49,7 +66,7 @@ Event2d FileEvent2dReader::readEvent2d()
     char * buffer = new char[8];
     file.read(buffer, 8);
 
-    Event2d e = bufferToEvent2d(buffer);
+    Event2d e = (format == 0) ? bufferToEvent2d(buffer) : atisToEvent2d(buffer);
 
     if (e.t < last_t) {
         shift_t += last_t;
@@ -58,6 +75,15 @@ Event2d FileEvent2dReader::readEvent2d()
     last_t = e.t;
 
     e.t += shift_t;
+
+    return e;
+}
+
+Event2d FileEvent2dReader::peekEvent2d()
+{
+    Event2d e = readEvent2d();
+
+    file.seekg(-8, ios::cur);
 
     return e;
 }

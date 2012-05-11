@@ -1,193 +1,188 @@
 #include <iostream>
 #include <string>
 #include <vector>
+#include <queue>
 #include <cmath>
 #include <cstdlib>
 
 #include <boost/timer.hpp>
 
-#include <opencv2/core/core.hpp>
+#include "ini/cpp/INIReader.h"
 
 #include "../aer/event2d.h"
 #include "../aer/fileevent2dreader.h"
 #include "../aer/dummyevent2dreader.h"
 
 #include "precompexp.h"
+#include "doublemat.h"
 
-#include "misc.h"
 #include "bplayer.h"
 
 using namespace std;
-using namespace cv;
-
-struct Modif2d {
-    unsigned char x;
-    unsigned char y;
-    double v;
-
-    Modif2d(unsigned char x, unsigned char y, double v)
-        : x(x), y(y), v(v) {}
-};
-
-struct TimedModif2dSet {
-    unsigned int t;
-    vector<Modif2d> modifs;
-
-    TimedModif2dSet() {}
-    TimedModif2dSet(unsigned int reserve) { modifs.reserve(reserve); }
-    TimedModif2dSet(unsigned int t, vector<Modif2d> modifs)
-        : t(t), modifs(modifs) {}
-};
-
-TimedModif2dSet spatialTrans(const Event2d & e, Mat * m, int maxWidth) {
-    TimedModif2dSet set(m->cols * m->rows);
-    set.t = e.t;
-    vector<Modif2d> & modifs = set.modifs;
-
-    int shift = m->cols / 2;
-
-    for (int x = 0; x < m->cols; ++x) {
-        for (int y = 0; y < m->rows; ++y) {
-            int i = x - shift + e.x;
-            int j = y - shift + e.y;
-            // Check boundaries
-            if (i >= 0 && i < maxWidth && j >= 0 && j < maxWidth) {
-                modifs.push_back(Modif2d(i, j, m->at<double>(x, y) * e.p));
-            }
-        }
-    }
-
-    return set;
-}
-
-struct SimuParam {
-    unsigned int width;
-
-    Mat dGONe;
-    Mat dGONi;
-    Mat dGOFFe;
-    Mat dGOFFi;
-
-    int timeShift;
-
-    PrecompExp * pExpONe;
-    PrecompExp * pExpONi;
-    PrecompExp * pExpOFFe;
-    PrecompExp * pExpOFFi;
-};
-
-void buildParams(SimuParam & p) {
-    p.width = 128;
-
-    Mat A = kernel_gaussian(15, 2);
-    Mat B = kernel_gaussian(15, 5);
-    Mat dGON = A - B;
-    Mat dGOFF = -dGON;
-    p.dGONe  = dGON;
-    p.dGONi  = dGON;
-    p.dGOFFe = dGOFF;
-    p.dGOFFi = dGOFF;
-
-    p.timeShift = 50000;
-
-    p.pExpONe  = new PrecompExp(20000);
-    p.pExpONi  = new PrecompExp(20000);
-    p.pExpOFFe = new PrecompExp(20000);
-    p.pExpOFFi = new PrecompExp(20000);
-}
-
-static SimuParam * sParam;
-static timestamp last_t;
 
 int main(int argc, char *argv[])
 {
+    if (argc < 5) {
+        cout << "Usage: ./rgcell ParameterFile EventsFiles RGCellX RGCellY [MaximumTick]" << endl;
+        cout << "Example: ./rgcell OnBeta/OnBeta.params events.aedat 42 42" << endl;
+        terminate();
+    }
+
+
     /*
      * Simulation parameters
      */
-    SimuParam p;
-    sParam = &p;
-    buildParams(p);
+    int width = 128;
+
+    {
+        ifstream confFile(argv[1]);
+        if (!confFile.is_open()) {
+            cout << "Unable to open parameters file : " << argv[1] << endl;
+            terminate();
+        }
+    }
+    INIReader conf(argv[1]);
+
+    timestamp maxTick = 1000;
+    if (argc >= 6)
+        maxTick = atol(argv[5]);
 
 
     /*
      * Input data
      */
-    //DummyEvent2dReader reader(p.width, 1000000);
-    FileEvent2dReader reader("/home/riton/NC1.dat");
-    //FileEvent2dReader reader("/home/riton/ntest3.dat");
-    //FileEvent2dReader reader("/home/riton/iv/saccades_variables_bluredleft/p2_d64.dat"); //8.4E6 e
-    //FileEvent2dReader reader("/home/riton/sacgratings.dat"); // 12.7E6 e
+    FileEvent2dReader reader(argv[2]);
 
 
     /*
-     * Bipolar layers init
+     * RGCell position
      */
-    BPLayer bpONe (p.width);
-    BPLayer bpONi (p.width);
-    BPLayer bpOFFe(p.width);
-    BPLayer bpOFFi(p.width);
+    unsigned char rgx = atoi(argv[3]);
+    unsigned char rgy = atoi(argv[4]);
 
-    /* DEBUG */
-    boost::timer tic;
+
+    /*
+      Bipolar layers
+     */
+    BPLayer * B1 = new BPLayer(width, rgx, rgy, conf.GetInteger("B1", "tau", 0),
+                               DoubleMat(conf.Get("B1", "bipolar", "unspecified B1 bipolar matrix")),
+                               DoubleMat(conf.Get("B1", "ganglion", "unspecified B1 ganglion matrix")));
+    BPLayer * B2 = new BPLayer(width, rgx, rgy, conf.GetInteger("B2", "tau", 0),
+                               DoubleMat(conf.Get("B2", "bipolar", "unspecified B2 bipolar matrix")),
+                               DoubleMat(conf.Get("B2", "ganglion", "unspecified B2 ganglion matrix")));
+    BPLayer * B3 = new BPLayer(width, rgx, rgy, conf.GetInteger("B3", "tau", 0),
+                               DoubleMat(conf.Get("B3", "bipolar", "unspecified B3 bipolar matrix")),
+                               DoubleMat(conf.Get("B3", "ganglion", "unspecified B3 ganglion matrix")));
+    BPLayer * B4 = new BPLayer(width, rgx, rgy, conf.GetInteger("B4", "tau", 0),
+                               DoubleMat(conf.Get("B4", "bipolar", "unspecified B4 bipolar matrix")),
+                               DoubleMat(conf.Get("B4", "ganglion", "unspecified B4 ganglion matrix")));
+
 
     unsigned event_index = 0;
+    timestamp t = 0;
 
-    last_t = 0;
-    timestamp last_t_shift = 0;
+    timestamp last_cout = 0;
 
-    while (reader.hasNext()) {
-        ++event_index;
+    timestamp d1 = conf.GetInteger("B1", "delay", 0);
+    timestamp d2 = conf.GetInteger("B2", "delay", 0);
+    timestamp d3 = conf.GetInteger("B3", "delay", 0);
+    timestamp d4 = conf.GetInteger("B4", "delay", 0);
 
-        Event2d e = reader.readEvent2d();
+    queue<Event2d> queue1;
+    queue<Event2d> queue2;
+    queue<Event2d> queue3;
+    queue<Event2d> queue4;
 
-        if (e.t != last_t) {
-            last_t = e.t;
-            last_t_shift = last_t - p.timeShift;
+    double temp1;
+    double temp2;
+    double temp3;
+    double temp4;
+
+    double g;
+
+    //boost::timer tic;
+
+    while (true) {
+
+        // Fill queues
+        if (queue1.size() == 0 || queue2.size() == 0 || queue3.size() == 0 || queue4.size() == 0) {
+            if (reader.hasNext()) {
+                Event2d e = reader.readEvent2d();
+                ++event_index;
+
+                queue1.push(e.shifted(d1));
+                queue2.push(e.shifted(d2));
+                queue3.push(e.shifted(d3));
+                queue4.push(e.shifted(d4));
+            }
         }
 
-        TimedModif2dSet setONe  = spatialTrans(e, &p.dGONe,  p.width);
-        TimedModif2dSet setONi  = spatialTrans(e, &p.dGONi,  p.width);
-        TimedModif2dSet setOFFe = spatialTrans(e, &p.dGOFFe, p.width);
-        TimedModif2dSet setOFFi = spatialTrans(e, &p.dGOFFi, p.width);
 
-        for (unsigned int i = 0; i < setONe.modifs.size(); ++i) {
-            Modif2d & m = setONe.modifs[i];
-            BPCell & cell = bpONe.c(m.x, m.y);
-            cell.add(m.v, last_t, p.pExpONe);
+        // End loop when no more events
+        if (queue1.empty() && queue2.empty() && queue3.empty() && queue4.empty()) {
+            break;
         }
 
-        for (unsigned int i = 0; i < setONi.modifs.size(); ++i) {
-            Modif2d & m = setONi.modifs[i];
-            BPCell & cell = bpONi.c(m.x, m.y);
-            cell.add(m.v, last_t_shift, p.pExpONi);
+
+        // Find next tick
+        t += maxTick;
+        if (!queue1.empty() && queue1.front().t < t) {
+            t = queue1.front().t;
+        }
+        if (!queue2.empty() && queue2.front().t < t) {
+            t = queue2.front().t;
+        }
+        if (!queue3.empty() && queue3.front().t < t) {
+            t = queue3.front().t;
+        }
+        if (!queue4.empty() && queue4.front().t < t) {
+            t = queue4.front().t;
         }
 
-        for (unsigned int i = 0; i < setOFFe.modifs.size(); ++i) {
-            Modif2d & m = setOFFe.modifs[i];
-            BPCell & cell = bpOFFe.c(m.x, m.y);
-            cell.add(m.v, last_t, p.pExpOFFe);
+
+        // Compute
+        g = 0;
+
+        if (t == queue1.front().t) {
+            temp1 = B1->feed(queue1.front());
+            queue1.pop();
+        } else {
+            temp1 = B1->feed(t);
         }
 
-        for (unsigned int i = 0; i < setOFFi.modifs.size(); ++i) {
-            Modif2d & m = setOFFi.modifs[i];
-            BPCell & cell = bpOFFi.c(m.x, m.y);
-            cell.add(m.v, last_t_shift, p.pExpOFFi);
+        if (t == queue2.front().t) {
+            temp2 = B2->feed(queue2.front());
+            queue2.pop();
+        } else {
+            temp2 = B2->feed(t);
         }
 
-//        int ix = 42;
-//        int iy = 42;
-//        vector<double> valsONe   = bpONe.c(ix, iy).rangeCompute(last_t, 100, last_t+200000, p.pExpONe);
-//        vector<double> valsONi   = bpONe.c(ix, iy).rangeCompute(last_t, 100, last_t+200000, p.pExpONi);
-//        vector<double> valsOFFe  = bpONe.c(ix, iy).rangeCompute(last_t, 100, last_t+200000, p.pExpOFFe);
-//        vector<double> valsOFFi  = bpONe.c(ix, iy).rangeCompute(last_t, 100, last_t+200000, p.pExpOFFi);
+        if (t == queue3.front().t) {
+            temp3 = B3->feed(queue3.front());
+            queue3.pop();
+        } else {
+            temp3 = B3->feed(t);
+        }
 
-//        double last_val = 0;
-//        for (unsigned int i = 0; i < valsONe.size(); ++i) {
+        if (t == queue4.front().t) {
+            temp4 = B4->feed(queue4.front());
+            queue4.pop();
+        } else {
+            temp4 = B4->feed(t);
+        }
 
-//        }
+        g += temp1 - temp2 - temp3 + temp4;
+
+
+        // Output
+        if (t - last_cout >= maxTick) {
+            cout << t << ", " << g << endl;
+            last_cout = t;
+        }
+
     }
-    cout << sizeof(double) << endl;
-    cout << event_index / tic.elapsed() << "e/s" << endl;
+
+    //cout << "# " << event_index / tic.elapsed() << "e/s" << endl;
 
     return 0;
 }
